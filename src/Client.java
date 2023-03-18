@@ -1,64 +1,139 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
-        Socket socket = null;
-        InputStreamReader inputStreamReader = null;
-        OutputStreamWriter outputStreamWriter = null;
-        BufferedReader bufferedReader = null;
-        BufferedWriter bufferedWriter = null;
-
+        Scanner scanner = null;
         try {
-            socket = new Socket("localhost", 10000);
-            inputStreamReader = new InputStreamReader(socket.getInputStream());
-            outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
+            Socket socket = new Socket("localhost", 8080);
 
-            bufferedReader = new BufferedReader(inputStreamReader);
-            bufferedWriter = new BufferedWriter(outputStreamWriter);
+            InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
-            Scanner scanner = new Scanner(System.in);
+            scanner = new Scanner(System.in);
 
             while (true) {
-                String message = scanner.nextLine();
-                bufferedWriter.write(message);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
 
-                //This will wait for response from server
-                System.out.println(bufferedReader.readLine());
+                System.out.println("What do you want to do?");
+                System.out.println("1: Get all books. (GET)");
+                System.out.println("2: Get a specific book. (GET)");
+                System.out.println("3: Add a book to the list. (POST)");
+                System.out.println("4: Quit.");
 
-                if (message.equalsIgnoreCase("quit")) {
+                int selectionInput = scanner.nextInt();
+                scanner.nextLine();
+
+                if (selectionInput == 4) {
                     break;
                 }
+
+                switch (selectionInput) {
+                    case 1 -> {
+                        String getRequest = "GET / HTTP/1.1\r\n";
+                        getRequest += "Connection: keep-alive\r\n";
+                        getRequest += "\r\n";
+                        bufferedWriter.write(getRequest);
+                        bufferedWriter.flush();
+                    }
+                    case 2 -> {
+                        System.out.println("What book by order do you want?");
+                        String book = scanner.nextLine();
+                        String getRequest = "GET /pets?species=" + book + " HTTP/1.1\r\n";
+                        getRequest += "Connection: keep-alive\r\n";
+                        getRequest += "\r\n";
+                        bufferedWriter.write(getRequest);
+                        bufferedWriter.flush();
+                    }
+                    case 3 -> {
+                        System.out.println("String - Enter the title:");
+                        String title = scanner.nextLine();
+                        System.out.println("String - Enter the series. (n/a if not available):");
+                        String seriesName = scanner.nextLine();
+                        System.out.println("int - Enter the order of serie. (0 if not available):");
+                        int seriesID = scanner.nextInt();
+                        System.out.println("String - Enter release date. (xxxx-xx-xx):");
+                        String release = scanner.nextLine();
+                        System.out.println("String - Enter the category:");
+                        String category = scanner.nextLine();
+                        System.out.println("String - Enter the Author:");
+                        String author = scanner.nextLine();
+                        System.out.println("int - Pages paperback:");
+                        int pagesPB = scanner.nextInt();
+                        System.out.println("int - Pages hardback:");
+                        int pagesHB = scanner.nextInt();
+                        System.out.println("Word count:");
+                        int words = scanner.nextInt();
+                        System.out.println("Audiobook length (String xxhxxm, n/a if not available):");
+                        String audio = scanner.nextLine();
+
+                        String jsonInput = String.format("{\"title\": \"%s\", \"seriesName\": \"%s\", \"seriesID\": \"%d\", \"release\": \"%s\", \"category\": \"%s\", \"author\": \"%s\", \"pagesPB\": \"%d\", \"pagesHB\": \"%d\", \"words\": \"%d\", \"audio\": \"%s\",}", title, seriesName, seriesID, release, category, author, pagesPB, pagesHB, words, audio);
+
+                        String postRequest = "POST / HTTP/1.1\r\n";
+                        postRequest += "Content-Type: application/json\r\n";
+                        postRequest += "Content-Length: " + jsonInput.length() + "\r\n";
+                        postRequest += "Connection: keep-alive\r\n";
+                        postRequest += "\r\n";
+                        postRequest += jsonInput;
+                        bufferedWriter.write(postRequest);
+                        bufferedWriter.flush();
+                    }
+                    default -> System.out.println("Invalid input, try again.");
+                }
+
+
+                String line;
+                StringBuilder response = new StringBuilder();
+
+                int contentLength = -1;
+
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (line.startsWith("Content-Length:")) {
+                        contentLength = Integer.parseInt(line.substring("Content-Length:".length()).trim());
+                    }
+
+                    if (line.isEmpty()) {
+                        break;
+                    }
+                }
+
+                if (contentLength > 0) {
+                    char[] contentBuffer = new char[contentLength];
+                    bufferedReader.read(contentBuffer);
+                    response.append(new String(contentBuffer));
+                }
+                System.out.println(response);
+
+                response.setLength(0);
             }
+
+            closeAll(socket, inputStreamReader, outputStreamWriter, bufferedReader, bufferedWriter);
         } catch (Exception e) {
             System.out.println(e);
         } finally {
-            try {
-                if (socket != null) {
-                    socket.close();
-                }
-                if (inputStreamReader != null) {
-                    inputStreamReader.close();
-                }
-                if (outputStreamWriter != null) {
-                    outputStreamWriter.close();
-                }
-                if (bufferedReader != null) {
-                    bufferedReader.close();
-                }
-                if (bufferedWriter != null) {
-                    bufferedWriter.close();
-                }
+            if (scanner != null) {
+                scanner.close();
             }
-            catch (Exception e){
-                e.printStackTrace();
-            }
+        }
+    }
+
+    private static void closeAll(Socket socket, InputStreamReader inputStreamReader, OutputStreamWriter outputStreamWriter, BufferedReader bufferedReader, BufferedWriter bufferedWriter) throws IOException {
+        if (socket != null) {
+            socket.close();
+        }
+        if (inputStreamReader != null) {
+            inputStreamReader.close();
+        }
+        if (outputStreamWriter != null) {
+            outputStreamWriter.close();
+        }
+        if (bufferedReader != null) {
+            bufferedReader.close();
+        }
+        if (bufferedWriter != null) {
+            bufferedWriter.close();
         }
     }
 }
