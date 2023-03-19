@@ -6,7 +6,7 @@ public class Client {
     public static void main(String[] args) {
         Scanner scanner = null;
         try {
-            Socket socket = new Socket("localhost", 8080);
+            Socket socket = new Socket("localhost", 10000);
 
             InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
