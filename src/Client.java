@@ -1,15 +1,19 @@
 import java.io.*;
 import java.net.Socket;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
-        Scanner scanner = null;
-        try {
-            Socket socket = new Socket("localhost", 10000);
 
-            InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
+        Scanner scanner = null;
+
+        try {
+            Socket clientSocket = new Socket("localhost", 10000);
+
+            InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(clientSocket.getOutputStream());
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
@@ -39,9 +43,12 @@ public class Client {
                         bufferedWriter.flush();
                     }
                     case 2 -> {
-                        System.out.println("What book by order do you want?");
-                        String book = scanner.nextLine();
-                        String getRequest = "GET /pets?species=" + book + " HTTP/1.1\r\n";
+                        System.out.println("What book do you want?");
+                        String bookQuery = scanner.nextLine();
+
+                        String encodedBookQuery = encodeValue(bookQuery);
+
+                        String getRequest = "GET /book?title=" + encodedBookQuery + " HTTP/1.1\r\n";
                         getRequest += "Connection: keep-alive\r\n";
                         getRequest += "\r\n";
                         bufferedWriter.write(getRequest);
@@ -54,6 +61,7 @@ public class Client {
                         String seriesName = scanner.nextLine();
                         System.out.println("int - Enter the order of serie. (0 if not available):");
                         int seriesID = scanner.nextInt();
+                        scanner.nextLine();
                         System.out.println("String - Enter release date. (xxxx-xx-xx):");
                         String release = scanner.nextLine();
                         System.out.println("String - Enter the category:");
@@ -62,10 +70,13 @@ public class Client {
                         String author = scanner.nextLine();
                         System.out.println("int - Pages paperback:");
                         int pagesPB = scanner.nextInt();
+                        scanner.nextLine();
                         System.out.println("int - Pages hardback:");
                         int pagesHB = scanner.nextInt();
+                        scanner.nextLine();
                         System.out.println("Word count:");
                         int words = scanner.nextInt();
+                        scanner.nextLine();
                         System.out.println("Audiobook length (String xxhxxm, n/a if not available):");
                         String audio = scanner.nextLine();
 
@@ -109,13 +120,22 @@ public class Client {
                 response.setLength(0);
             }
 
-            closeAll(socket, inputStreamReader, outputStreamWriter, bufferedReader, bufferedWriter);
+            closeAll(clientSocket, inputStreamReader, outputStreamWriter, bufferedReader, bufferedWriter);
+
         } catch (Exception e) {
             System.out.println(e);
         } finally {
             if (scanner != null) {
                 scanner.close();
             }
+        }
+    }
+
+    private static String encodeValue(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(ex.getCause());
         }
     }
 
