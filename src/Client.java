@@ -10,10 +10,10 @@ public class Client {
         Scanner scanner = null;
 
         try {
-            Socket clientSocket = new Socket("localhost", 10000);
+            Socket socket = new Socket("localhost", 10000);
 
-            InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(clientSocket.getOutputStream());
+            InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
@@ -21,12 +21,17 @@ public class Client {
 
             while (true) {
 
-                System.out.println("What do you want to do?");
-                System.out.println("1: Get all books. (GET)");
-                System.out.println("2: Get a specific book. (GET)");
-                System.out.println("3: Add a book to the list. (POST)");
-                System.out.println("4: Quit.");
+                System.out.println("""
+                        ==================================
+                        What do you want to do?
+                        1: Get all books. (GET)
+                        2: Get a specific book. (GET)
+                        3: Add a book to the list. (POST)
+                        4: Quit. (Closing client)
+                        ==================================
+                        """);
 
+                System.out.print("INPUT: ");
                 int selectionInput = scanner.nextInt();
                 scanner.nextLine();
 
@@ -94,7 +99,7 @@ public class Client {
                     default -> System.out.println("Invalid input, try again.");
                 }
 
-
+                // Handeling the server response
                 String line;
                 StringBuilder response = new StringBuilder();
 
@@ -115,12 +120,16 @@ public class Client {
                     bufferedReader.read(contentBuffer);
                     response.append(new String(contentBuffer));
                 }
-                System.out.println(response);
+
+                System.out.println("");
+                System.out.println("RESPONSE: " + response);
+                System.out.println("");
 
                 response.setLength(0);
             }
 
-            closeAll(clientSocket, inputStreamReader, outputStreamWriter, bufferedReader, bufferedWriter);
+            // Close all resources
+            closeAll(socket, inputStreamReader, outputStreamWriter, bufferedReader, bufferedWriter);
 
         } catch (Exception e) {
             System.out.println(e);
