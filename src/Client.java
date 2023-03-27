@@ -1,7 +1,9 @@
+import org.json.simple.JSONObject;
 import java.io.*;
 import java.net.Socket;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Client {
@@ -60,32 +62,7 @@ public class Client {
                         bufferedWriter.flush();
                     }
                     case 3 -> {
-                        System.out.println("String - Enter the title:");
-                        String title = scanner.nextLine();
-                        System.out.println("String - Enter the series. (n/a if not available):");
-                        String seriesName = scanner.nextLine();
-                        System.out.println("int - Enter the order of serie. (0 if not available):");
-                        int seriesID = scanner.nextInt();
-                        scanner.nextLine();
-                        System.out.println("String - Enter release date. (xxxx-xx-xx):");
-                        String release = scanner.nextLine();
-                        System.out.println("String - Enter the category:");
-                        String category = scanner.nextLine();
-                        System.out.println("String - Enter the Author:");
-                        String author = scanner.nextLine();
-                        System.out.println("int - Pages paperback:");
-                        int pagesPB = scanner.nextInt();
-                        scanner.nextLine();
-                        System.out.println("int - Pages hardback:");
-                        int pagesHB = scanner.nextInt();
-                        scanner.nextLine();
-                        System.out.println("Word count:");
-                        int words = scanner.nextInt();
-                        scanner.nextLine();
-                        System.out.println("Audiobook length (String xxhxxm, n/a if not available):");
-                        String audio = scanner.nextLine();
-
-                        String jsonInput = String.format("{\"title\": \"%s\", \"seriesName\": \"%s\", \"seriesID\": \"%d\", \"release\": \"%s\", \"category\": \"%s\", \"author\": \"%s\", \"pagesPB\": \"%d\", \"pagesHB\": \"%d\", \"words\": \"%d\", \"audio\": \"%s\",}", title, seriesName, seriesID, release, category, author, pagesPB, pagesHB, words, audio);
+                        String jsonInput = getJsonInput();
 
                         String postRequest = "POST / HTTP/1.1\r\n";
                         postRequest += "Content-Type: application/json\r\n";
@@ -106,6 +83,15 @@ public class Client {
                 int contentLength = -1;
 
                 while ((line = bufferedReader.readLine()) != null) {
+                    String serverResponse;
+
+                    if (line.startsWith("HTTP/1.1 201")) {
+                        serverResponse = line.substring("HTTP/1.1".length()).trim();
+                        System.out.println("");
+                        System.out.println("RESPONSE: " + serverResponse);
+                        System.out.println("");
+                    }
+
                     if (line.startsWith("Content-Length:")) {
                         contentLength = Integer.parseInt(line.substring("Content-Length:".length()).trim());
                     }
@@ -164,5 +150,50 @@ public class Client {
         if (bufferedWriter != null) {
             bufferedWriter.close();
         }
+    }
+
+    public static String getJsonInput() {
+        Scanner scanner = new Scanner(System.in);
+        String title = getValidStringInput(scanner, "String - Enter the title:");
+        String category = getValidStringInput(scanner, "String - Enter the category:");
+        String author = getValidStringInput(scanner, "String - Enter the Author:");
+        int words = getValidIntInput(scanner, "Word count:");
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("title", title);
+        jsonObject.put("category", category);
+        jsonObject.put("author", author);
+        jsonObject.put("words", words);
+
+        return jsonObject.toString();
+    }
+
+    private static String getValidStringInput(Scanner scanner, String prompt) {
+        String input;
+        System.out.println(prompt);
+        do {
+            input = scanner.nextLine().trim();
+            if (input.isEmpty()) {
+                System.out.println("Please enter a non-empty value:");
+            }
+        } while (input.isEmpty());
+        return input;
+    }
+
+    private static int getValidIntInput(Scanner scanner, String prompt) {
+        int input = 0;
+        boolean isValid = false;
+        System.out.println(prompt);
+        while (!isValid) {
+            try {
+                input = scanner.nextInt();
+                isValid = true;
+            } catch (InputMismatchException e) {
+                System.out.println("Please enter a valid integer:");
+            } finally {
+                scanner.nextLine();
+            }
+        }
+        return input;
     }
 }
