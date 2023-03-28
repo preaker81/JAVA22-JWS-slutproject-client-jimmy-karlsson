@@ -9,20 +9,26 @@ import java.util.Scanner;
 public class Client {
     public static void main(String[] args) {
 
+        // Initialize the scanner for user input
         Scanner scanner = null;
 
         try {
+            // Connect to the server using a socket with localhost and port 10000
             Socket socket = new Socket("localhost", 10000);
 
+            // Set up input and output streams for the socket
             InputStreamReader inputStreamReader = new InputStreamReader(socket.getInputStream());
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
+            // Initialize the scanner for user input
             scanner = new Scanner(System.in);
 
+            // Main loop for user interaction
             while (true) {
 
+                // Display the menu for the user
                 System.out.println("""
                         ==================================
                         What do you want to do?
@@ -33,15 +39,19 @@ public class Client {
                         ==================================
                         """);
 
+                // Get the user's choice
                 System.out.print("INPUT: ");
                 int selectionInput = scanner.nextInt();
                 scanner.nextLine();
 
+                // Exit the loop if the user chooses to quit
                 if (selectionInput == 4) {
                     break;
                 }
 
+                // Process user's choice
                 switch (selectionInput) {
+                    // Get all books
                     case 1 -> {
                         String getRequest = "GET / HTTP/1.1\r\n";
                         getRequest += "Connection: keep-alive\r\n";
@@ -50,9 +60,11 @@ public class Client {
                         bufferedWriter.flush();
                     }
                     case 2 -> {
+                        // Get a specific book
                         System.out.println("What book do you want?");
                         String bookQuery = scanner.nextLine();
 
+                        // Encode the book title for use in a URL
                         String encodedBookQuery = encodeValue(bookQuery);
 
                         String getRequest = "GET /book?title=" + encodedBookQuery + " HTTP/1.1\r\n";
@@ -61,6 +73,7 @@ public class Client {
                         bufferedWriter.write(getRequest);
                         bufferedWriter.flush();
                     }
+                    // Add a book to the list
                     case 3 -> {
                         String jsonInput = getJsonInput();
 
@@ -73,10 +86,11 @@ public class Client {
                         bufferedWriter.write(postRequest);
                         bufferedWriter.flush();
                     }
+                    // Invalid input
                     default -> System.out.println("Invalid input, try again.");
                 }
 
-                // Handeling the server response
+                // Handle the server response
                 String line;
                 StringBuilder response = new StringBuilder();
 
@@ -101,6 +115,7 @@ public class Client {
                     }
                 }
 
+                // Read and display the response content if the content length is greater than 0
                 if (contentLength > 0) {
                     char[] contentBuffer = new char[contentLength];
                     bufferedReader.read(contentBuffer);
@@ -111,6 +126,7 @@ public class Client {
                 System.out.println("RESPONSE: " + response);
                 System.out.println("");
 
+                // Reset the response string builder for the next iteration
                 response.setLength(0);
             }
 
@@ -126,6 +142,7 @@ public class Client {
         }
     }
 
+    // Function - Encode the given value using URL encoding with UTF-8
     private static String encodeValue(String value) {
         try {
             return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
@@ -134,6 +151,7 @@ public class Client {
         }
     }
 
+    // Function - Close all resources
     private static void closeAll(Socket socket, InputStreamReader inputStreamReader, OutputStreamWriter outputStreamWriter, BufferedReader bufferedReader, BufferedWriter bufferedWriter) throws IOException {
         if (socket != null) {
             socket.close();
@@ -152,6 +170,7 @@ public class Client {
         }
     }
 
+    // Function - Get JSON input for the book information
     public static String getJsonInput() {
         Scanner scanner = new Scanner(System.in);
         String title = getValidStringInput(scanner, "String - Enter the title:");
@@ -159,15 +178,18 @@ public class Client {
         String author = getValidStringInput(scanner, "String - Enter the Author:");
         int words = getValidIntInput(scanner, "Word count:");
 
+        // Create a JSON object with the book information
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("title", title);
         jsonObject.put("category", category);
         jsonObject.put("author", author);
         jsonObject.put("words", words);
 
+        // Return the JSON object as a string
         return jsonObject.toString();
     }
 
+    // Function - Get valid string input from the user
     private static String getValidStringInput(Scanner scanner, String prompt) {
         String input;
         System.out.println(prompt);
@@ -180,6 +202,7 @@ public class Client {
         return input;
     }
 
+    // Function - Get valid integer input from the user
     private static int getValidIntInput(Scanner scanner, String prompt) {
         int input = 0;
         boolean isValid = false;
